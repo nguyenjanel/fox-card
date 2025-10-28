@@ -20,7 +20,10 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
 
   constructor() {
     super();
-     this.handleClick = this.handleClick.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+    
+    this.foxHistory = [];
+    this.currentIndex = -1;
 
     this.registerLocalization({
       context: this,
@@ -46,7 +49,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       :host {
         display: block;
         color: var(--ddd-theme-primary);
-        background-color: var(--ddd-theme-default-inventOrange);
+        background-color: var(--ddd-theme-default-white);
         font-family: var(--ddd-font-navigation);
         justify-content: center;
         display: inline-flex;
@@ -55,37 +58,52 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       .wrapper {
         margin: var(--ddd-spacing-2);
         padding: var(--ddd-spacing-4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         justify-content: center; /* centers horizontally */
         align-items: center;
         border-radius: 20px;
-        border: 2px solid #ffc0cb;
+        border: 2px solid var(--ddd-theme-default-inventOrange);
         box-shadow: 0 0 15px rgba(255, 182, 193, 0.5);
       }
-      h3 span {
+      h3{
         font-size: var(--fox-card-label-font-size, var(--ddd-font-size-s));
+        padding: 4px;
       }
       .img-cont{
-        min-width: 400px;
-        min-height: 200px;
-        max-width: 400px;
+        width: 400px;       /* set your preferred size */
+        height: 400px;
         overflow: hidden;
-        border-radius: 10px;
+        border-radius: 8px;
+        padding: 8px;
       }
       .img-cont img {
-        max-width: 100%;
         border-radius: 10px;
-        transition: transform 0.3s ease;
+        border: 2px solid black;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;  
+        display: block; 
       }
-      .img-cont img:hover {
-        transform: scale(1.05);
+      .bar {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 4px;
       }
       .bar button {
         padding: 8px 20px;
-        border: black;
+        border: 1px solid var(--ddd-theme-default-inventOrange);
         border-radius: 10px;
         font-weight: bold;
         cursor: pointer;
+        display: inline-flex;       
+        align-items: center;        
+        justify-content: center;     
         transition: transform 0.2s, box-shadow 0.2s;
+        color: var(--ddd-theme-default-inventOrange);
+        transition: transform 0.2s, color 0.2s;
       }
       .bar button:hover {
         transform: translateY(-2px);
@@ -97,44 +115,96 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       }
       .bar button.dislike.active {
         background-color: gray;
-        color: white;
+        color: red;
+      }
+      .bar button.share{
+        height: 40px;
       }
       .caption a {
-      color: white;
+      color: var(--ddd-theme-default-inventOrange);
       text-decoration: none; /* optional: remove underline */
     }
-
-    .caption a:hover {
-      text-decoration: underline; /* optional hover effect */
-    }
+      .caption a:hover {
+        text-decoration: underline; 
+      }
+      .nav-bar {
+        display: flex;
+        align-items: center;      
+        justify-content: center; 
+        gap: 10px;               
+        margin-bottom: 10px;
+      }
+      .nav-bar h3{
+          margin: 0;
+          font-size:  var(--ddd-font-size-l);
+      }
+      .nav-bar button {
+        background: none;
+        border: none;
+        font-size: 40px;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.2s;
+      }
+      .nav-bar button:hover {
+        background-color: #ffe6ec;
+        transform: scale(1.1);
+      }
     `];
   }
-    handleClick(e){
-    console.log("Button clicked:", e.target); // <— should log every click
+  handleClick(e) {
     const btn = e.target;
+    const likeBtn = this.renderRoot.querySelector(".like");
+    const dislikeBtn = this.renderRoot.querySelector(".dislike");
+
+    if (!this.foxHistory[this.currentIndex]) return;
+
+    const fox = this.foxHistory[this.currentIndex];
+
     if (btn.classList.contains("like")) {
-      btn.classList.toggle("active");
+      const isActive = btn.classList.toggle("active");
+      dislikeBtn.classList.remove("active");
+      fox.state = { like: isActive, dislike: false };
     }
     else if (btn.classList.contains("dislike")) {
-      btn.classList.toggle("active");
+      const isActive = btn.classList.toggle("active");
+      likeBtn.classList.remove("active");
+      fox.state = { like: false, dislike: isActive };
     }
-    else if (btn.classList.contains("share")) {
-      console.log("Link copied!");
-    }
+    // Also save to localStorage per fox
+    const savedState = JSON.parse(localStorage.getItem("foxStates") || "{}");
+    savedState[fox.image] = fox.state;
+    localStorage.setItem("foxStates", JSON.stringify(savedState));
   }
 
   // Lit render the HTML
   render() {
     return html`
   <div class="wrapper">
-    <h3>Fox Card</h3>
+    <div class="nav-bar">
+      <button class="prev" @click=${() => this.showPrevFox()}>&larr;</button>
+      <h3>Fox Card</h3>
+      <button class="next" @click=${() => this.showNextFox()}>&rarr;</button>
+    </div>
     <div class="img-cont">
       <img src="" alt = "fox pic">
     </div>
     <div class="bar">
-      <button class="like" @click=${this.handleClick}>Like</button>
-      <button class="dislike" @click=${this.handleClick}>Dislike</button>
-      <button class="share" @click=${this.handleClick}>Share</button>
+      <button class="like" @click=${this.handleClick}>
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+      </button>
+      <button class="dislike" @click=${this.handleClick}>
+        <svg width="24" height="24" viewBox="0 0 24 24">
+        <!-- Left half of heart -->
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09" fill="currentColor"/>
+        <!-- Right half of heart -->
+        <path d="M12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3c-1.74 0-3.41 0.81-4.5 2.09" fill="currentColor"/>
+        <!-- Jagged crack -->
+        <path d="M12 3 L11 6 L13 9 L11 12 L13 15 L12 21" fill="none" stroke="white" stroke-width="2"/>
+        </svg>
+      </button>
+      <button class="share" @click=${() => this.handleShare()}>Share</button>
     </div>
     <div class="caption">
       <p></p>
@@ -143,31 +213,104 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
   }
 
   firstUpdated() {
-    // Make the API request when the element is ready
-    fetch("https://randomfox.ca/floof/")
-      .then((resp) => {
-        if (resp.ok) {
-          return resp.json();
-        }
-      })
-      .then((data) => {
-        // Update the image source and caption dynamically
-        const img = this.renderRoot.querySelector("img");
-        const caption = this.renderRoot.querySelector(".caption p");
+    const params = new URLSearchParams(window.location.search);
+    const foxImage = params.get("foxImage");
+    const foxLink = params.get("foxLink");
+    const foxLike = params.get("foxLike") === "true";
+    const foxDislike = params.get("foxDislike") === "true";
 
-        if (img) img.src = data.image;
-        if (caption) {
+    if (foxImage && foxLink) {
+      // Load fox from shared URL
+      const fox = {
+        image: foxImage,
+        link: foxLink,
+        state: { like: foxLike, dislike: foxDislike },
+      };
+      this.foxHistory.push(fox);
+      this.currentIndex = this.foxHistory.length - 1;
+      this.currentFoxId = fox.image;
+
+      this.updateFoxDisplay(fox);
+    } else {
+      // No shared fox → load a random one
+      this.loadNewFox();
+    }
+  }
+  handleShare() {
+    const fox = this.foxHistory?.[this.currentIndex];
+  if (!fox) return;
+
+  const shareUrl = new URL(window.location.href);
+  shareUrl.searchParams.set("foxImage", fox.image);
+  shareUrl.searchParams.set("foxLink", fox.link);
+  shareUrl.searchParams.set("foxLike", fox.state?.like);      // true/false
+  shareUrl.searchParams.set("foxDislike", fox.state?.dislike);
+
+  navigator.clipboard.writeText(shareUrl.toString())
+    .then(() => alert("Fox link copied!"))
+    .catch(err => console.error(err));
+}
+
+  loadNewFox() {
+    fetch("https://randomfox.ca/floof/")
+    .then(resp => resp.ok && resp.json())
+    .then(data => {
+      const fox = { 
+        image: data.image, 
+        link: data.link,
+        state: { like: false, dislike: false },
+      };
+
+      this.foxHistory.push(fox);
+      this.currentIndex = this.foxHistory.length - 1;
+      this.currentFoxId = fox.image;
+
+      this.updateFoxDisplay(fox); 
+    })
+    .catch(err => console.error("Error fetching fox:", err));
+  }
+  updateFoxDisplay(fox) {
+      const img = this.renderRoot.querySelector("img");
+      const caption = this.renderRoot.querySelector(".caption");
+      const likeBtn = this.renderRoot.querySelector(".like");
+      const dislikeBtn = this.renderRoot.querySelector(".dislike");
+
+      if (img) img.src = fox.image;
+      if (caption) {
         caption.innerHTML = `
           <p>
-            <a href="${data.link}" target="_blank" rel="noopener noreferrer">
+            <a href="${fox.link}" target="_blank" rel="noopener noreferrer">
               View this fox 🦊
             </a>
-          </p>
-        `;
+          </p>`;
       }
-      })
-      .catch((err) => console.error("Error fetching fox:", err));
+
+      // Restore like/dislike state
+      likeBtn?.classList.toggle("active", fox.state.like);
+      dislikeBtn?.classList.toggle("active", fox.state.dislike);;
   }
+
+showPrevFox() {
+    if (this.currentIndex > 0) {
+    this.currentIndex--;
+    const fox = this.foxHistory[this.currentIndex];
+    this.currentFoxId = fox.image;
+    this.updateFoxDisplay(fox);
+  }
+  
+}
+
+showNextFox() {
+  if (this.currentIndex < this.foxHistory.length - 1) {
+    this.currentIndex++;
+    const fox = this.foxHistory[this.currentIndex];
+    this.currentFoxId = fox.image;
+    this.updateFoxDisplay(fox);
+  } else {
+    this.loadNewFox();
+  }
+}
+
   /**
    * haxProperties integration via file reference
    */
