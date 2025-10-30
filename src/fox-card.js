@@ -22,7 +22,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
     super();
     this.handleClick = this.handleClick.bind(this);
     
-    this.foxHistory = [];
+    this.foxList = [];
     this.currentIndex = -1;
 
     this.registerLocalization({
@@ -151,30 +151,6 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       }
     `];
   }
-  handleClick(e) {
-    const btn = e.target;
-    const likeBtn = this.renderRoot.querySelector(".like");
-    const dislikeBtn = this.renderRoot.querySelector(".dislike");
-
-    if (!this.foxHistory[this.currentIndex]) return;
-
-    const fox = this.foxHistory[this.currentIndex];
-
-    if (btn.classList.contains("like")) {
-      const isActive = btn.classList.toggle("active");
-      dislikeBtn.classList.remove("active");
-      fox.state = { like: isActive, dislike: false };
-    }
-    else if (btn.classList.contains("dislike")) {
-      const isActive = btn.classList.toggle("active");
-      likeBtn.classList.remove("active");
-      fox.state = { like: false, dislike: isActive };
-    }
-    // Also save to localStorage per fox
-    const savedState = JSON.parse(localStorage.getItem("foxStates") || "{}");
-    savedState[fox.image] = fox.state;
-    localStorage.setItem("foxStates", JSON.stringify(savedState));
-  }
 
   // Lit render the HTML
   render() {
@@ -212,43 +188,71 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
   </div>`;
   }
 
-  firstUpdated() {
-    const params = new URLSearchParams(window.location.search);
-    const foxImage = params.get("foxImage");
-    const foxLink = params.get("foxLink");
-    const foxLike = params.get("foxLike") === "true";
-    const foxDislike = params.get("foxDislike") === "true";
+  handleClick(e) {
+    const btn = e.target;
+    const likeBtn = this.renderRoot.querySelector(".like");
+    const dislikeBtn = this.renderRoot.querySelector(".dislike");
 
-    if (foxImage && foxLink) {
-      // Load fox from shared URL
-      const fox = {
-        image: foxImage,
-        link: foxLink,
-        state: { like: foxLike, dislike: foxDislike },
-      };
-      this.foxHistory.push(fox);
-      this.currentIndex = this.foxHistory.length - 1;
-      this.currentFoxId = fox.image;
+    if (!this.foxList[this.currentIndex]) return;
 
-      this.updateFoxDisplay(fox);
-    } else {
-      // No shared fox → load a random one
-      this.loadNewFox();
+    const fox = this.foxList[this.currentIndex];
+
+    if (btn.classList.contains("like")) {
+      const isActive = btn.classList.toggle("active");
+      dislikeBtn.classList.remove("active");
+      fox.state = { like: isActive, dislike: false };
     }
+    else if (btn.classList.contains("dislike")) {
+      const isActive = btn.classList.toggle("active");
+      likeBtn.classList.remove("active");
+      fox.state = { like: false, dislike: isActive };
+    }
+    // Also save to localStorage per fox
+    const savedState = JSON.parse(localStorage.getItem("foxStates") || "{}");
+    savedState[fox.image] = fox.state;
+    localStorage.setItem("foxStates", JSON.stringify(savedState));
   }
+
+  async firstUpdated() {
+    const resp = await fetch("/api/foxes");
+    this.foxList = await resp.json();  // store full list
+    console.log("Response object:", resp);
+    this.currentIndex = 0;
+    this.showFoxAt(this.currentIndex);
+}
+  getFoxState(image) {
+    // Retrieve saved states from localStorage
+    const savedState = JSON.parse(localStorage.getItem("foxStates") || "{}");
+    
+    // Return the state for this specific fox (or default false/false)
+    return savedState[image] || { like: false, dislike: false };
+  }
+
+  showFoxAt(index) {
+    const fox = this.foxList[index];
+    if (!fox) return;
+
+    this.currentFoxId = fox.id;
+    this.updateFoxDisplay({
+      image: fox.image,
+      link: fox.image,
+      state: this.getFoxState(fox.image),
+    });
+  }
+
   handleShare() {
-    const fox = this.foxHistory?.[this.currentIndex];
-  if (!fox) return;
+    const fox = this.foxList?.[this.currentIndex];
+    if (!fox) return;
 
-  const shareUrl = new URL(window.location.href);
-  shareUrl.searchParams.set("foxImage", fox.image);
-  shareUrl.searchParams.set("foxLink", fox.link);
-  shareUrl.searchParams.set("foxLike", fox.state?.like);      // true/false
-  shareUrl.searchParams.set("foxDislike", fox.state?.dislike);
+    const foxState = this.getFoxState(fox.image);
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set("foxImage", fox.image);
+    shareUrl.searchParams.set("foxLike", foxState.like);
+    shareUrl.searchParams.set("foxDislike", foxState.dislike);
 
-  navigator.clipboard.writeText(shareUrl.toString())
-    .then(() => alert("Fox link copied!"))
-    .catch(err => console.error(err));
+    navigator.clipboard.writeText(shareUrl.toString())
+      .then(() => alert("Fox link copied with state!"))
+      .catch(err => console.error(err));
 }
 
   loadNewFox() {
@@ -261,8 +265,8 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
         state: { like: false, dislike: false },
       };
 
-      this.foxHistory.push(fox);
-      this.currentIndex = this.foxHistory.length - 1;
+      this.foxList.push(fox);
+      this.currentIndex = this.foxList.length - 1;
       this.currentFoxId = fox.image;
 
       this.updateFoxDisplay(fox); 
@@ -292,22 +296,19 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
 
 showPrevFox() {
     if (this.currentIndex > 0) {
-    this.currentIndex--;
-    const fox = this.foxHistory[this.currentIndex];
-    this.currentFoxId = fox.image;
-    this.updateFoxDisplay(fox);
+      this.currentIndex--;
+      this.showFoxAt(this.currentIndex);
+  } else {
+      console.log("No previous fox!");
   }
-  
 }
 
 showNextFox() {
-  if (this.currentIndex < this.foxHistory.length - 1) {
+  if (this.currentIndex < this.foxList.length - 1) {
     this.currentIndex++;
-    const fox = this.foxHistory[this.currentIndex];
-    this.currentFoxId = fox.image;
-    this.updateFoxDisplay(fox);
+    this.showFoxAt(this.currentIndex);
   } else {
-    this.loadNewFox();
+    console.log("No next fox!");
   }
 }
 
