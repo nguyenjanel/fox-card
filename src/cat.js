@@ -1,13 +1,20 @@
 export default async function handler(req, res) {
-  const catPromises = Array.from({ length: 50 }, async () => {
-    const resp = await fetch("https://cataas.com/cat?json=true");
-    const data = await resp.json();
-    return {
-      id: data.id, // or assign sequential 1-50 if you want
-      image: `https://cataas.com${data.url}`, // direct image link
-    };
-  });
-
-  const cats = await Promise.all(catPromises);
+  const cats = await Promise.all(
+    Array.from({ length: 50 }, async (_, i) => {
+      const data = await fetch(`https://cataas.com/cat?json=true`).then(r => r.json());
+      return {
+        id: i + 1,
+        image: data.url,  // this is the direct URL to the cat image
+      };
+    })
+  );
+  res.setHeader("Cache-Control", "max-age=0, s-maxage=1800");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+  );
   res.status(200).json(cats);
 }
