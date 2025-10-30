@@ -255,7 +255,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       .then(() => alert("Fox link copied with state!"))
       .catch(err => console.error(err));
 }
-
+/*
   loadNewFox() {
     fetch("https://randomfox.ca/floof/")
     .then(resp => resp.ok && resp.json())
@@ -273,7 +273,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       this.updateFoxDisplay(fox); 
     })
     .catch(err => console.error("Error fetching fox:", err));
-  }
+  }*/
   updateFoxDisplay(fox) {
       const img = this.renderRoot.querySelector("img");
       const caption = this.renderRoot.querySelector(".caption");
