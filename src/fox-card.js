@@ -218,6 +218,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
     //const resp = await fetch("./mock-data/foxes.json");
     const resp = await fetch("/api/cat");
     this.foxList = await resp.json();  // store full list
+    console.log("Raw response text:", text);
     this.currentIndex = 0;
     this.showFoxAt(this.currentIndex);
 }
