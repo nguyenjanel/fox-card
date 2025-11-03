@@ -216,17 +216,18 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
   async firstUpdated() {
     //const resp = await fetch("/api/foxes");
     //const resp = await fetch("./mock-data/foxes.json");
-    const resp = await fetch("/api/cat");
+    //const resp = await fetch("/api/cat");
+    const resp = await fetch("./mock-data/cats.json");
     this.foxList = await resp.json();  // store full list
-    console.log("Response JSON:", this.foxList); 
+    console.log("Loaded cats:", this.foxList);  
     this.currentIndex = 0;
     this.showFoxAt(this.currentIndex);
 }
   getFoxState(image) {
-    // Retrieve saved states from localStorage
+    // retrieve saved states from localStorage
     const savedState = JSON.parse(localStorage.getItem("foxStates") || "{}");
     
-    // Return the state for this specific fox (or default false/false)
+    // return the state for this specific fox (or default false/false)
     return savedState[image] || { like: false, dislike: false };
   }
 
