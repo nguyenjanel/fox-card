@@ -48,7 +48,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
     css`
       :host {
         display: block;
-        color: var(--ddd-theme-primary);
+        color: var(--ddd-theme-default-athertonViolet);
         background-color: var(--ddd-theme-default-white);
         font-family: var(--ddd-font-navigation);
         justify-content: center;
@@ -64,7 +64,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
         justify-content: center; /* centers horizontally */
         align-items: center;
         border-radius: 20px;
-        border: 2px solid var(--ddd-theme-default-inventOrange);
+        border: 2px solid var(--ddd-theme-default-athertonViolet);
         box-shadow: 0 0 15px rgba(255, 182, 193, 0.5);
       }
       h3{
@@ -94,7 +94,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       }
       .bar button {
         padding: 8px 20px;
-        border: 1px solid var(--ddd-theme-default-inventOrange);
+        border: 1px solid var(--ddd-theme-default-beaverBlue);
         border-radius: 10px;
         font-weight: bold;
         cursor: pointer;
@@ -102,12 +102,13 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
         align-items: center;        
         justify-content: center;     
         transition: transform 0.2s, box-shadow 0.2s;
-        color: var(--ddd-theme-default-inventOrange);
+        color: var(--ddd-theme-default-beaverBluew);
         transition: transform 0.2s, color 0.2s;
       }
       .bar button:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        background-color: var(--ddd-theme-default-alertImmediate);
       }
       .bar button.like.active {
         background-color: red;
@@ -121,7 +122,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
         height: 40px;
       }
       .caption a {
-      color: var(--ddd-theme-default-inventOrange);
+      color: var(--ddd-theme-default-athertonViolet);
       text-decoration: none; /* optional: remove underline */
     }
       .caption a:hover {
@@ -146,8 +147,21 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
         transition: background-color 0.2s, transform 0.2s;
       }
       .nav-bar button:hover {
-        background-color: #ffe6ec;
+        background-color: var(--ddd-theme-default-alertImmediate);
         transform: scale(1.1);
+      }
+      @media (prefers-color-scheme: dark) {
+        :host {
+          background-color: var(--ddd-theme-default-potential50);
+        }
+        .bar button{
+          background-color: var(--ddd-theme-default-limestoneMaxLight);
+          color: var(--ddd-theme-default-potential50);
+        }
+        .caption a {
+        color: var(--ddd-theme-default-limestoneLight);
+        text-decoration: none; /* optional: remove underline */
+      }
       }
     `];
   }
@@ -158,7 +172,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
   <div class="wrapper">
     <div class="nav-bar">
       <button class="prev" @click=${() => this.showPrevFox()}>&larr;</button>
-      <h3>Fox Card</h3>
+      <h3 class = "cat-name"></h3>
       <button class="next" @click=${() => this.showNextFox()}>&rarr;</button>
     </div>
     <div class="img-cont">
@@ -218,8 +232,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
     //const resp = await fetch("./mock-data/foxes.json");
     //const resp = await fetch("/api/cat");
     const resp = await fetch("./mock-data/cats.json");
-    this.foxList = await resp.json();  // store full list
-    console.log("Loaded cats:", this.foxList);  
+    this.foxList = await resp.json();  // store full list 
     this.currentIndex = 0;
     this.showFoxAt(this.currentIndex);
 }
@@ -240,6 +253,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       image: fox.image,
       link: fox.image,
       state: this.getFoxState(fox.image),
+      name: fox.name,
     });
   }
 
@@ -254,7 +268,7 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
     shareUrl.searchParams.set("foxDislike", foxState.dislike);
 
     navigator.clipboard.writeText(shareUrl.toString())
-      .then(() => alert("Fox link copied with state!"))
+      .then(() => alert("link copied!"))
       .catch(err => console.error(err));
 }
 /*
@@ -281,15 +295,20 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
       const caption = this.renderRoot.querySelector(".caption");
       const likeBtn = this.renderRoot.querySelector(".like");
       const dislikeBtn = this.renderRoot.querySelector(".dislike");
+      const name = this.renderRoot.querySelector(".cat-name");
 
       if (img) img.src = fox.image;
       if (caption) {
         caption.innerHTML = `
           <p>
             <a href="${fox.link}" target="_blank" rel="noopener noreferrer">
-              View this fox 🦊
+              View this Cat 🐈
             </a>
           </p>`;
+      }
+
+      if (name) {
+        name.textContent = fox.name || "Unnamed Cat"; // ✅ just set the text
       }
 
       // Restore like/dislike state
