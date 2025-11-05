@@ -163,6 +163,19 @@ export class FoxCard extends DDDSuper(I18NMixin(LitElement)) {
         text-decoration: none; /* optional: remove underline */
       }
       }
+        /* Shrink for phones (screen ≤ 600px) */
+      @media (max-width: 600px) {
+        :host {
+          width: 90%;          /* take most of the screen width */
+          padding: 12px;       /* reduce padding */
+          transform: scale(0.9); /* optional: slightly shrink it */
+        }
+        .img-cont{
+          width: 90%;          /* take most of the screen width */
+          padding: 12px;       /* reduce padding */
+          transform: scale(0.9); /* optional: slightly shrink it */
+        }
+      }
     `];
   }
 
